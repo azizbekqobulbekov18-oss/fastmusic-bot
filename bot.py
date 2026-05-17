@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8095539849:AAEgit8RRcIt9lRSqwmBqDJVjnw2EvdEYbs")
 
 _admin_env = os.environ.get("ADMIN_IDS", "123456789")
 ADMIN_IDS: set[int] = {int(x.strip()) for x in _admin_env.split(",") if x.strip().isdigit()}
@@ -777,8 +777,8 @@ def run_flask() -> None:
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
 def main() -> None:
-    if not TOKEN:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN is not set!")
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is not set!")
 
     logger.info(f"Admin IDs: {ADMIN_IDS}")
 
@@ -786,7 +786,7 @@ def main() -> None:
     flask_thread.start()
     logger.info("Keep-alive server started on port 5000")
 
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
