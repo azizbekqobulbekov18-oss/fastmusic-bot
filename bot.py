@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8095539849:AAEgit8RRcIt9lRSqwmBqDJVjnw2EvdEYbs")
 
-_admin_env = os.environ.get("ADMIN_IDS", "123456789")
+_admin_env = os.environ.get("ADMIN_IDS", "8397484222")
 ADMIN_IDS: set[int] = {int(x.strip()) for x in _admin_env.split(",") if x.strip().isdigit()}
 
 # ─── Translations ────────────────────────────────────────────────────────────
@@ -640,6 +640,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # ─── Callback handler ─────────────────────────────────────────────────────────
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global bot_enabled
     query = update.callback_query
     uid = query.from_user.id
     data = query.data
@@ -696,7 +697,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
 
         if action == "botoff":
-            global bot_enabled
             bot_enabled = False
             await query.edit_message_text(build_admin_text(), reply_markup=build_admin_kb(), parse_mode="HTML")
             return
@@ -776,6 +776,14 @@ def run_flask() -> None:
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
+async def handle_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    import telegram
+    if isinstance(context.error, telegram.error.Conflict):
+        logger.warning("Conflict: another bot instance is running. Retrying...")
+        return
+    logger.error("Unhandled exception:", exc_info=context.error)
+
+
 def main() -> None:
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN is not set!")
@@ -803,9 +811,10 @@ def main() -> None:
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_error_handler(handle_error)
 
     logger.info("Bot is running...")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query"])
 
 
 if __name__ == "__main__":
